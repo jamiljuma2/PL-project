@@ -1,5 +1,12 @@
 from django.contrib import admin
-from .models import WalletTransaction, LipanaTransaction
+from .models import WalletTransaction, LipanaTransaction, Withdrawal
+
+@admin.register(Withdrawal)
+class WithdrawalAdmin(admin.ModelAdmin):
+	list_display = ("user", "amount", "status", "requested_at", "processed_at")
+	list_filter = ("status",)
+	search_fields = ("user__username",)
+	readonly_fields = ("user", "amount", "requested_at", "status", "processed_at", "admin_note")
 
 
 @admin.register(WalletTransaction)

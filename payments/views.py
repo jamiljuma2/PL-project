@@ -6,8 +6,80 @@ from django.db import transaction
 from django.utils.crypto import get_random_string
 from accounts.models import Wallet
 from accounts.permissions import IsAdminRole, IsStudent
-from .models import WalletTransaction, LipanaTransaction
-from .serializers import WalletSerializer, WalletTopupSerializer, LipanaTxSerializer
+from .models import WalletTransaction, LipanaTransaction, Withdrawal
+from .serializers import WalletSerializer, WalletTopupSerializer, LipanaTxSerializer, WithdrawalSerializer
+from rest_framework.permissions import BasePermission
+
+# Permission: IsWriter
+class IsWriter(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and getattr(request.user, 'role', None) == 'WRITER'
+
+
+# Writer requests withdrawal
+class WithdrawalRequestView(APIView):
+    permission_classes = [IsAuthenticated, IsWriter]
+
+    def post(self, request):
+        amount = request.data.get('amount')
+        if not amount:
+            return Response({"detail": "Amount required"}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            amount = float(amount)
+        except Exception:
+            return Response({"detail": "Invalid amount"}, status=status.HTTP_400_BAD_REQUEST)
+        wallet = getattr(request.user, 'wallet', None)
+        if not wallet or wallet.balance < amount:
+            return Response({"detail": "Insufficient balance"}, status=status.HTTP_400_BAD_REQUEST)
+        with transaction.atomic():
+            withdrawal = Withdrawal.objects.create(user=request.user, amount=amount)
+            wallet.balance -= amount
+            wallet.save(update_fields=["balance"])
+        return Response(WithdrawalSerializer(withdrawal).data, status=status.HTTP_201_CREATED)
+
+
+# Admin approves/rejects withdrawal
+class WithdrawalAdminActionView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminRole]
+
+    def post(self, request, pk):
+        action = request.data.get('action')
+        note = request.data.get('note', '')
+        try:
+            withdrawal = Withdrawal.objects.get(pk=pk)
+        except Withdrawal.DoesNotExist:
+            return Response({"detail": "Withdrawal not found"}, status=status.HTTP_404_NOT_FOUND)
+        if action == 'approve':
+            withdrawal.approve(admin_user=request.user, note=note)
+            return Response({"detail": "Withdrawal approved"})
+        elif action == 'reject':
+            withdrawal.reject(admin_user=request.user, note=note)
+            # Refund to wallet
+            wallet = getattr(withdrawal.user, 'wallet', None)
+            if wallet:
+                wallet.balance += withdrawal.amount
+                wallet.save(update_fields=["balance"])
+            return Response({"detail": "Withdrawal rejected and refunded"})
+        else:
+            return Response({"detail": "Invalid action"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+# List withdrawals for user (writer)
+class WithdrawalListView(APIView):
+    permission_classes = [IsAuthenticated, IsWriter]
+
+    def get(self, request):
+        withdrawals = Withdrawal.objects.filter(user=request.user).order_by('-requested_at')
+        return Response(WithdrawalSerializer(withdrawals, many=True).data)
+
+
+# List all withdrawals for admin
+class WithdrawalAdminListView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminRole]
+
+    def get(self, request):
+        withdrawals = Withdrawal.objects.all().order_by('-requested_at')
+        return Response(WithdrawalSerializer(withdrawals, many=True).data)
 from .services import trigger_stk_push
 from django.conf import settings
 import hmac

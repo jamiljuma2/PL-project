@@ -58,6 +58,19 @@ class PasswordResetView(APIView):
         return Response({"detail": "Password reset token created"})
 
 
+
+# Password Reset Confirm View
+from .serializers import PasswordResetConfirmSerializer
+
+class PasswordResetConfirmView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = PasswordResetConfirmSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"detail": "Password has been reset successfully."})
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 class MeView(APIView):
     def get(self, request):
         data = {
