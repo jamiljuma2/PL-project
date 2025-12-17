@@ -10,3 +10,5 @@ celery
 djangorestframework-simplejwt
 whitenoise
 gunicorn
+
+requests
