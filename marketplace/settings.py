@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'storages',
     'django_celery_results',
+    'corsheaders',
     # First-party apps
     'accounts',
     'assignments',
@@ -71,6 +72,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'marketplace.urls'
@@ -223,3 +225,7 @@ DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='noreply@example.com')
 # Upload validations
 ALLOWED_FILE_EXTENSIONS = env.list('ALLOWED_FILE_EXTENSIONS', default=['pdf','doc','docx','txt','xls','xlsx','ppt','pptx','zip','rar','7z','odt','rtf'])
 MAX_FILE_SIZE_MB = env.int('MAX_FILE_SIZE_MB', default=20)
+
+CORS_ALLOWED_ORIGINS = [
+    "https://login-gamma-livid-63.vercel.app",
+]
