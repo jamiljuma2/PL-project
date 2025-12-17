@@ -226,6 +226,7 @@ DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='noreply@example.com')
 ALLOWED_FILE_EXTENSIONS = env.list('ALLOWED_FILE_EXTENSIONS', default=['pdf','doc','docx','txt','xls','xlsx','ppt','pptx','zip','rar','7z','odt','rtf'])
 MAX_FILE_SIZE_MB = env.int('MAX_FILE_SIZE_MB', default=20)
 
-CORS_ALLOWED_ORIGINS = [
-    "https://login-gamma-livid-63.vercel.app",
-]
+CORS_ALLOWED_ORIGINS = env.list(
+    "CORS_ALLOWED_ORIGINS",
+    default=["https://login-gamma-livid-63.vercel.app"]
+)
