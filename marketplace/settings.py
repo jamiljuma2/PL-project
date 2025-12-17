@@ -104,16 +104,21 @@ if 'test' in sys.argv:
         }
     }
 else:
-    DATABASES = {
-        'default': {
-            'ENGINE': env("DB_ENGINE", default='django.db.backends.sqlite3'),
-            'NAME': env("DB_NAME", default=str(BASE_DIR / 'db.sqlite3')),
-            'USER': env("DB_USER", default=''),
-            'PASSWORD': env("DB_PASSWORD", default=''),
-            'HOST': env("DB_HOST", default=''),
-            'PORT': env("DB_PORT", default=''),
+    if env("DATABASE_URL", default=None):
+        DATABASES = {
+            'default': env.db(),
         }
-    }
+    else:
+        DATABASES = {
+            'default': {
+                'ENGINE': env("DB_ENGINE", default='django.db.backends.sqlite3'),
+                'NAME': env("DB_NAME", default=str(BASE_DIR / 'db.sqlite3')),
+                'USER': env("DB_USER", default=''),
+                'PASSWORD': env("DB_PASSWORD", default=''),
+                'HOST': env("DB_HOST", default=''),
+                'PORT': env("DB_PORT", default=''),
+            }
+        }
 
 
 # Password validation
