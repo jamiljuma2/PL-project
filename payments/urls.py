@@ -16,4 +16,7 @@ urlpatterns = [
 
     # Transaction status sync endpoint
     path('transactions/status/<str:reference>/', TransactionStatusView.as_view(), name='transaction-status'),
+
+    # STK push endpoint
+    path('transactions/push-stk', WalletTopupView.as_view(), name='push-stk'),
 ]
