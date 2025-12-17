@@ -9,3 +9,4 @@ redis
 celery
 djangorestframework-simplejwt
 whitenoise
+gunicorn
