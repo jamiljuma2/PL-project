@@ -1,0 +1,11 @@
+Django>=4.2,<4.3
+djangorestframework
+django-environ
+django-celery-results
+django-storages
+boto3
+psycopg2-binary
+redis
+celery
+djangorestframework-simplejwt
+whitenoise

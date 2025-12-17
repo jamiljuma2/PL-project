@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import WalletView, WalletTopupView, LipanaCallbackView, ReleasePaymentView, EarningsView, WithdrawalRequestView, WithdrawalAdminActionView, WithdrawalListView, WithdrawalAdminListView
+from .views import WalletView, WalletTopupView, LipanaCallbackView, ReleasePaymentView, EarningsView, WithdrawalRequestView, WithdrawalAdminActionView, WithdrawalListView, WithdrawalAdminListView, TransactionStatusView
 
 urlpatterns = [
     path('wallet/', WalletView.as_view(), name='wallet-get'),
@@ -13,4 +13,7 @@ urlpatterns = [
     path('withdrawals/request', WithdrawalRequestView.as_view(), name='withdrawal-request'),
     path('admin/withdrawals/', WithdrawalAdminListView.as_view(), name='admin-withdrawal-list'),
     path('admin/withdrawals/<int:pk>/action', WithdrawalAdminActionView.as_view(), name='admin-withdrawal-action'),
+
+    # Transaction status sync endpoint
+    path('transactions/status/<str:reference>/', TransactionStatusView.as_view(), name='transaction-status'),
 ]

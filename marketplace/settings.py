@@ -35,7 +35,8 @@ SECRET_KEY = env("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env("DEBUG")
 
-ALLOWED_HOSTS = env("ALLOWED_HOSTS")
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["127.0.0.1", "localhost"])
+print("DEBUG: ALLOWED_HOSTS:", ALLOWED_HOSTS)
 
 
 # Application definition
@@ -203,6 +204,7 @@ CELERY_RESULT_BACKEND = env('CELERY_RESULT_BACKEND', default='django-db')
 LIPANA_BASE_URL = env('LIPANA_BASE_URL', default='https://api.lipana.dev/v1')
 LIPANA_API_KEY = env('LIPANA_API_KEY', default='')
 LIPANA_CALLBACK_SECRET = env('LIPANA_CALLBACK_SECRET', default='')
+LIPANA_PUBLISHABLE_KEY = env('LIPANA_PUBLISHABLE_KEY', default='')
 
 # Email settings
 EMAIL_BACKEND = env('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')

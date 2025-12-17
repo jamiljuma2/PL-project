@@ -1,6 +1,12 @@
+
 from rest_framework import serializers
 from accounts.models import Wallet
 from .models import WalletTransaction, LipanaTransaction, Withdrawal
+
+class TransactionStatusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LipanaTransaction
+        fields = ["reference", "amount", "purpose", "status", "processed", "created_at"]
 
 
 class WithdrawalSerializer(serializers.ModelSerializer):

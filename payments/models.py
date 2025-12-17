@@ -29,6 +29,10 @@ class LipanaTransaction(models.Model):
 	status = models.CharField(max_length=16, choices=Status.choices, default=Status.PENDING)
 	created_at = models.DateTimeField(default=timezone.now)
 	processed = models.BooleanField(default=False)
+	stk_push_code = models.CharField(max_length=32, blank=True, null=True)  # e.g. provider response code
+	stk_push_message = models.CharField(max_length=256, blank=True, null=True)  # e.g. provider response message
+	stk_push_at = models.DateTimeField(null=True, blank=True)
+	callback_at = models.DateTimeField(null=True, blank=True)
 
 # Create your models here.
 
