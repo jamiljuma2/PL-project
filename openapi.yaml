@@ -1,0 +1,505 @@
+openapi: 3.0.3
+info:
+  title: Assignment Marketplace API
+  version: 1.0.0
+  description: |
+    OpenAPI specification for Assignment Marketplace backend (Django + DRF)
+    All endpoints (except callbacks) require JWT authentication via `Authorization: Bearer <token>`.
+    
+servers:
+  - url: https://your-production-domain.com/api
+    description: Production server
+  - url: http://localhost:8000/api
+    description: Local development server
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [STUDENT, WRITER, ADMIN]
+        is_active:
+          type: boolean
+    Wallet:
+      type: object
+      properties:
+        balance:
+          type: number
+          format: decimal
+        updated_at:
+          type: string
+          format: date-time
+    WalletTopup:
+      type: object
+      properties:
+        amount:
+          type: number
+          format: decimal
+      required: [amount]
+    LipanaTransaction:
+      type: object
+      properties:
+        reference:
+          type: string
+        amount:
+          type: number
+          format: decimal
+        purpose:
+          type: string
+        status:
+          type: string
+          enum: [PENDING, SUCCESS, FAILED]
+        processed:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+    Withdrawal:
+      type: object
+      properties:
+        id:
+          type: integer
+        user:
+          $ref: '#/components/schemas/User'
+        amount:
+          type: number
+          format: decimal
+        status:
+          type: string
+          enum: [PENDING, APPROVED, REJECTED]
+        requested_at:
+          type: string
+          format: date-time
+        processed_at:
+          type: string
+          format: date-time
+        admin_note:
+          type: string
+    Subscription:
+      type: object
+      properties:
+        plan:
+          type: string
+          enum: [P2, P5, P10]
+        active:
+          type: boolean
+        daily_count:
+          type: integer
+        daily_date:
+          type: string
+          format: date
+    Assignment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        files:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssignmentFile'
+    AssignmentFile:
+      type: object
+      properties:
+        id:
+          type: integer
+        file:
+          type: string
+          format: uri
+        uploaded_at:
+          type: string
+          format: date-time
+        size_bytes:
+          type: integer
+    Submission:
+      type: object
+      properties:
+        assignment:
+          type: string
+          format: uuid
+        writer:
+          $ref: '#/components/schemas/User'
+        file:
+          type: string
+          format: uri
+        status:
+          type: string
+        notes:
+          type: string
+        uploaded_at:
+          type: string
+          format: date-time
+
+security:
+  - BearerAuth: []
+
+paths:
+  /auth/register:
+    post:
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                email:
+                  type: string
+                password:
+                  type: string
+                role:
+                  type: string
+                  enum: [STUDENT, WRITER, ADMIN]
+              required: [username, email, password, role]
+      responses:
+        '201':
+          description: User registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+  /auth/login:
+    post:
+      summary: Obtain JWT token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+              required: [username, password]
+      responses:
+        '200':
+          description: JWT token pair
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access:
+                    type: string
+                  refresh:
+                    type: string
+  /auth/refresh:
+    post:
+      summary: Refresh JWT token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh:
+                  type: string
+              required: [refresh]
+      responses:
+        '200':
+          description: New access token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access:
+                    type: string
+  /auth/me:
+    get:
+      summary: Get current user
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: User info
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+  /wallet/:
+    get:
+      summary: Get wallet info
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Wallet info
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Wallet'
+  /wallet/topup:
+    post:
+      summary: Trigger STK push for wallet top-up
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WalletTopup'
+      responses:
+        '201':
+          description: STK push triggered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                  reference:
+                    type: string
+                  code:
+                    type: string
+                  message:
+                    type: string
+  /payments/lipana/callback:
+    post:
+      summary: Payment provider callback (no auth, HMAC signature required)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reference:
+                  type: string
+                status:
+                  type: string
+                amount:
+                  type: number
+                  format: decimal
+                code:
+                  type: string
+                message:
+                  type: string
+      responses:
+        '200':
+          description: Callback handled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+  /withdrawals/:
+    get:
+      summary: List user withdrawals
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of withdrawals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Withdrawal'
+  /withdrawals/request:
+    post:
+      summary: Request withdrawal
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount:
+                  type: number
+                  format: decimal
+              required: [amount]
+      responses:
+        '201':
+          description: Withdrawal requested
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Withdrawal'
+  /subscriptions/pay:
+    post:
+      summary: Trigger STK push for subscription
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                plan:
+                  type: string
+                  enum: [P2, P5, P10]
+              required: [plan]
+      responses:
+        '201':
+          description: Payment initiated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                  reference:
+                    type: string
+  /subscriptions/status:
+    get:
+      summary: Get subscription status
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Subscription info
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+  /assignments/:
+    post:
+      summary: Create assignment (student)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+              required: [title]
+      responses:
+        '201':
+          description: Assignment created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Assignment'
+    get:
+      summary: List assignments (student)
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of assignments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Assignment'
+  /assignments/my:
+    get:
+      summary: List my assignments (student)
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of my assignments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Assignment'
+  /tasks/available:
+    get:
+      summary: List available tasks (writer)
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of available tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Assignment'
+  /tasks/{id}/claim:
+    post:
+      summary: Claim a task (writer)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          required: true
+      responses:
+        '200':
+          description: Task claimed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Assignment'
+  /submissions/:
+    post:
+      summary: Submit work (writer)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                assignment:
+                  type: string
+                  format: uuid
+                file:
+                  type: string
+                  format: binary
+                notes:
+                  type: string
+      responses:
+        '201':
+          description: Submission created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Submission'
