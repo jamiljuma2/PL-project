@@ -66,13 +66,13 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
+    'corsheaders.middleware.CorsMiddleware',  # CORS middleware should be as high as possible
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'marketplace.urls'
@@ -230,3 +230,9 @@ CORS_ALLOWED_ORIGINS = env.list(
     "CORS_ALLOWED_ORIGINS",
     default=["https://login-gamma-livid-63.vercel.app"]
 )
+# Optionally allow credentials (cookies, auth headers)
+CORS_ALLOW_CREDENTIALS = True
+
+# Optionally allow all headers and methods (for development)
+# CORS_ALLOW_HEADERS = list(default_headers)  # Uncomment if you want to customize
+# CORS_ALLOW_METHODS = list(default_methods)  # Uncomment if you want to customize
